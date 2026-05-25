@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>V3.5 Markdown + Red/Blue Review</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --amber: #d97706;
+      --green: #16a34a;
+      --violet: #7c3aed;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #dbeafe 0, transparent 34rem), var(--bg);
+      color: var(--ink);
+    }
+    header {
+      padding: 44px min(7vw, 72px) 24px;
+    }
+    header .eyebrow { color: var(--blue); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
+    h1 { margin: 10px 0 12px; font-size: clamp(32px, 5vw, 58px); line-height: 1.02; max-width: 980px; }
+    header p { max-width: 860px; color: var(--muted); font-size: 18px; line-height: 1.65; }
+    main { padding: 0 min(7vw, 72px) 56px; display: grid; gap: 22px; }
+    section {
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, .06);
+    }
+    h2 { margin: 0 0 16px; font-size: 24px; }
+    h3 { margin: 0 0 8px; font-size: 18px; }
+    p, li { color: #334155; line-height: 1.62; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .card { border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: #fff; }
+    .tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .tag.blue { background: #dbeafe; color: #1d4ed8; }
+    .tag.red { background: #fee2e2; color: #b91c1c; }
+    .tag.green { background: #dcfce7; color: #15803d; }
+    .tag.amber { background: #fef3c7; color: #b45309; }
+    .tag.violet { background: #ede9fe; color: #6d28d9; }
+    .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: stretch; }
+    .step { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: #f8fafc; position: relative; }
+    .step strong { display: block; margin-bottom: 6px; }
+    .step p { margin: 0; font-size: 14px; }
+    .warning { border-left: 5px solid var(--amber); background: #fffbeb; }
+    .decision { border-left: 5px solid var(--violet); background: #faf5ff; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 7px; }
+    .kpi { font-size: 32px; font-weight: 800; margin: 0; color: var(--ink); }
+    footer { color: var(--muted); font-size: 13px; padding: 0 min(7vw, 72px) 40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Cairn V3.5 Draft · 2026-05-24</div>
+    <h1>复杂 Markdown 渲染 + 红蓝对抗审查</h1>
+    <p>本规格把“看得懂复杂报告”和“降低幻觉进入黑板”拆成两个可验收能力：安全 Markdown renderer 负责表达，红蓝 review gate 负责证据约束。</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>核心判断</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="tag blue">Markdown</span>
+          <h3>从轻量 parser 升级为安全渲染能力</h3>
+          <p>支持 GFM 表格、任务列表、代码块、链接策略、Raw/Debug 与 XSS 测试，而不是继续手写越来越复杂的字符串替换。</p>
+        </div>
+        <div class="card">
+          <span class="tag red">Red Team</span>
+          <h3>红队不是真理机器</h3>
+          <p>它只能暴露证据缺口、反证和过度推断，减少 unsupported conclusion 被采纳的概率，不能保证完全无幻觉。</p>
+        </div>
+        <div class="card">
+          <span class="tag green">Architecture</span>
+          <h3>不新增 Claim 图层</h3>
+          <p>候选结论与 review 细节进入 ExecutionEvent / Artifact；采纳后的用户可见结果仍是 Fact。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>红蓝审查流</h2>
+      <div class="flow">
+        <div class="step"><strong>Blue run</strong><p>探索并产出 candidate fact、证据引用、不确定性。</p></div>
+        <div class="step"><strong>Review gate</strong><p>策略判断是否需要红队：off / targeted / required。</p></div>
+        <div class="step"><strong>Red run</strong><p>检查证据、反证、未证推断、复现风险。</p></div>
+        <div class="step"><strong>Verdict</strong><p>pass / revise / fail / needs_human。</p></div>
+        <div class="step"><strong>Accept or block</strong><p>通过才写 Fact；否则修订、人工确认或拒绝。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Architecture Delta</h2>
+      <div class="card decision">
+        <p><code>Intent / Branch -> ExecutionRun -> ExecutionEvent -> Artifact / EvidenceLink -> Fact</code> 主链路不变。</p>
+        <p>新增的是 conclude 前的可选 <strong>Review Gate</strong>：蓝队候选先作为 event/artifact 保存，红队 verdict 也是 event/artifact，只有被采纳后才投影为 Fact。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>需要避免的误区</h2>
+      <div class="grid">
+        <div class="card warning">
+          <h3>不要把红队输出拆成一堆 Fact</h3>
+          <p>那会污染用户心智图。红队 critique 默认是审查产物，不是新的业务结论。</p>
+        </div>
+        <div class="card warning">
+          <h3>不要恢复旧 transcript 路径</h3>
+          <p>Output/Conversation/Review 仍必须消费 ExecutionEvent 和 Artifact，不走 <code>/questions</code> 或 <code>/runs/*/transcript</code>。</p>
+        </div>
+        <div class="card warning">
+          <h3>不要默认全量强审查</h3>
+          <p>推荐默认 targeted，否则成本和延迟会让简单任务也变重。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>验收口径</h2>
+      <div class="grid">
+        <div class="card">
+          <p class="kpi">安全</p>
+          <p>Markdown XSS fixture 不执行脚本，危险协议不生成链接，外链带 noopener。</p>
+        </div>
+        <div class="card">
+          <p class="kpi">可审计</p>
+          <p>蓝队候选、红队 verdict、人工 override 都能刷新后追溯。</p>
+        </div>
+        <div class="card">
+          <p class="kpi">可门控</p>
+          <p>revise/fail/needs_human 不应静默写 Fact；pass 才可自动采纳。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>待确认决策</h2>
+      <ul>
+        <li>默认 review mode 是否采用 <code>targeted</code>？</li>
+        <li>是否扩展 <code>ExecutionTaskType=review</code>，还是首版复用 conclude metadata？</li>
+        <li>红队是否必须不同 worker/model，还是允许同 worker 独立 session？</li>
+        <li>Markdown 升级是否先在单文件 UI 中做，还是并入 v3.3 前端模块化？</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Source: docs/specs/v3.5-markdown-red-blue-review-requirements.md
+  </footer>
+</body>
+</html>
