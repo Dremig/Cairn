@@ -23,6 +23,20 @@ class V34UiConversationProjectionGuardTests(unittest.TestCase):
         self.assertNotIn("workerJsonLinesToConversationEvents", projection_block)
         self.assertIn("kind: 'raw'", projection_block)
 
+    def test_markdown_content_is_rendered_as_sanitized_html(self) -> None:
+        html = HTML.read_text(encoding="utf-8")
+
+        self.assertIn("renderMarkdown(text)", html)
+        self.assertIn("renderMarkdownInline(text)", html)
+        self.assertIn('x-html="renderMarkdown(selectedFactRecord().description)"', html)
+        self.assertIn('x-html="renderMarkdown(selectedIntentRecord().description)"', html)
+        self.assertIn('x-html="renderMarkdown(conversationEventText(event))"', html)
+        self.assertIn('x-html="renderMarkdown(h.content)"', html)
+        self.assertIn("this.escapeHtml(code.replace", html)
+        self.assertIn('target="_blank" rel="noopener noreferrer"', html)
+        self.assertNotIn("marked.parse", html)
+
+
     def test_question_polling_has_no_fixed_120_iteration_cutoff(self) -> None:
         html = HTML.read_text(encoding="utf-8")
         poll_start = html.index("async pollQuestionThread")

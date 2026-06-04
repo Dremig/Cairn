@@ -302,8 +302,8 @@ def dispatch(config_path: Path, once: bool, startup_healthcheck_only: bool, envi
     from cairn.dispatcher.scheduler.loop import DispatcherLoop
 
     configure_logging(log_level, bare=startup_healthcheck_only or environment_healthcheck_only)
-    loop = DispatcherLoop(config_path)
     try:
+        loop = DispatcherLoop(config_path)
         if environment_healthcheck_only:
             loop.run_environment_healthchecks_only()
             return

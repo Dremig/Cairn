@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from click.testing import CliRunner
 
@@ -59,6 +60,52 @@ class DbCliTests(unittest.TestCase):
         restored = cli.invoke(main, ["db", "restore", "--db", str(path), "--backup", str(backup_path), "--yes"])
         self.assertEqual(restored.exit_code, 0, restored.output)
         self.assertIn("restored:", restored.output)
+
+    def test_dispatch_startup_failure_is_click_error(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        config = Path(tmp.name) / "dispatch.yaml"
+        config.write_text(
+            "\n".join(
+                [
+                    'server: "http://127.0.0.1:9"',
+                    "runtime:",
+                    "  interval: 3",
+                    "  max_workers: 2",
+                    "  max_running_projects: 1",
+                    "  max_project_workers: 2",
+                    "  healthcheck_timeout: 2",
+                    '  prompt_group: "mock"',
+                    "tasks:",
+                    "  bootstrap: {timeout: 9, conclude_timeout: 5}",
+                    "  reason: {timeout: 5, max_intents: 3}",
+                    "  explore: {timeout: 9, conclude_timeout: 5}",
+                    "environments:",
+                    "  - id: local-ssh",
+                    "    label: Local SSH",
+                    "    backend: ssh",
+                    "    ssh_command: ssh local.example",
+                    "    workspace_root: /tmp/cairn-local",
+                    "workers:",
+                    "  - name: mock",
+                    "    type: mock",
+                    "    task_types: [bootstrap]",
+                    "    max_running: 1",
+                    "    priority: 0",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        cli = CliRunner()
+
+        with patch(
+            "cairn.dispatcher.scheduler.loop.DispatcherLoop.__init__",
+            side_effect=RuntimeError("startup failed"),
+        ):
+            result = cli.invoke(main, ["dispatch", "--config", str(config), "--startup-healthcheck-only"])
+
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("Error: startup failed", result.output)
 
 
 if __name__ == "__main__":

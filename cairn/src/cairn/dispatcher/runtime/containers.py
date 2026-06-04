@@ -39,7 +39,13 @@ class ContainerManager:
         self._config = config
         if docker is None:
             raise RuntimeError("python docker package is required for Docker environments")
-        self._client = docker.from_env()
+        try:
+            self._client = docker.from_env()
+        except DockerException as exc:
+            raise RuntimeError(
+                "Docker environment unavailable: failed to connect to the Docker daemon. "
+                "Start Docker Desktop / dockerd, or use an SSH environment for this dispatcher."
+            ) from exc
         self._ensure_running_locks: dict[str, threading.Lock] = {}
         self._ensure_running_locks_guard = threading.Lock()
 

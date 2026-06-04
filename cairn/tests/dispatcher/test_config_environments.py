@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from cairn.dispatcher.config import DispatchConfig, DockerEnvironmentConfig, SshEnvironmentConfig
+from cairn.dispatcher.runtime.containers import ContainerManager, DockerException
 
 
 BASE_CONFIG = {
@@ -136,6 +138,24 @@ class DispatchConfigEnvironmentTests(unittest.TestCase):
 
         config = DispatchConfig.model_validate(data)
         self.assertEqual(config.workers[0].allowed_environments, ["missing"])
+
+    def test_docker_daemon_unavailable_has_actionable_error(self) -> None:
+        with patch("cairn.dispatcher.runtime.containers.docker.from_env", side_effect=DockerException("socket missing")):
+            with self.assertRaisesRegex(RuntimeError, "Docker environment unavailable"):
+                ContainerManager(
+                    DockerEnvironmentConfig.model_validate(
+                        {
+                            "id": "docker-default",
+                            "label": "Docker Default",
+                            "backend": "docker",
+                            "container": {
+                                "image": "ghcr.io/oritera/cairn-worker-container:latest",
+                                "network_mode": "host",
+                                "completed_action": "stop",
+                            },
+                        }
+                    ).container
+                )
 
 
 if __name__ == "__main__":

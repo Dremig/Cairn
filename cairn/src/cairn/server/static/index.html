@@ -13,6 +13,8 @@
 <script src="/static/vendor/cytoscape-klay.js"></script>
 <script src="/static/vendor/elk.bundled.js"></script>
 <script src="/static/vendor/cytoscape-elk.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
 <script defer src="/static/vendor/alpine.min.js"></script>
 <style>
   [x-cloak] { display: none !important; }
@@ -154,6 +156,23 @@
     pointer-events: auto;
     transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease;
   }
+  .markdown-body :where(h1, h2, h3) { font-weight: 700; color: #0f172a; line-height: 1.25; margin: 0.75rem 0 0.35rem; }
+  .markdown-body h1 { font-size: 1.15em; }
+  .markdown-body h2 { font-size: 1.08em; }
+  .markdown-body h3 { font-size: 1.02em; }
+  .markdown-body p { margin: 0.45rem 0; }
+  .markdown-body ul, .markdown-body ol { margin: 0.45rem 0; padding-left: 1.25rem; }
+  .markdown-body ul { list-style: disc; }
+  .markdown-body ol { list-style: decimal; }
+  .markdown-body li { margin: 0.2rem 0; }
+  .markdown-body code { padding: 0.1rem 0.3rem; border-radius: 0.35rem; background: rgba(148, 163, 184, 0.18); color: #334155; font-size: 0.9em; }
+  .markdown-body pre { margin: 0.55rem 0; padding: 0.65rem 0.75rem; overflow-x: auto; border-radius: 0.75rem; background: rgba(15, 23, 42, 0.92); color: #e2e8f0; }
+  .markdown-body pre code { padding: 0; background: transparent; color: inherit; }
+  .markdown-body blockquote { margin: 0.55rem 0; padding-left: 0.75rem; border-left: 3px solid #cbd5e1; color: #475569; }
+  .markdown-body a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+  .markdown-body table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0.55rem 0; }
+  .markdown-body th, .markdown-body td { border: 1px solid #e2e8f0; padding: 0.3rem 0.45rem; }
+  .markdown-body hr { border: 0; border-top: 1px solid #e2e8f0; margin: 0.75rem 0; }
   @media (hover: hover) and (pointer: fine) {
     .title-action-button {
       opacity: 0;
@@ -653,7 +672,7 @@
                 </div>
                 <div class="p-4 space-y-3">
                   <h4 class="text-sm font-semibold text-slate-800 leading-snug break-words" x-text="factDisplayTitle(fact)"></h4>
-                  <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words" x-text="fact.description"></p>
+                  <div class="markdown-body text-sm text-slate-700 leading-relaxed break-words" x-html="renderMarkdown(fact.description)"></div>
                   <div class="text-xs text-slate-400 space-y-1.5">
                     <template x-if="fact.id === 'origin'">
                       <p>Project starting point</p>
@@ -692,7 +711,7 @@
                 <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Title</p>
                 <h3 class="text-base font-semibold text-slate-800 leading-snug break-words" x-text="factDisplayTitle(selectedFactRecord())"></h3>
               </div>
-              <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words" x-text="selectedFactRecord().description"></p>
+              <div class="markdown-body text-sm text-slate-700 leading-relaxed break-words" x-html="renderMarkdown(selectedFactRecord().description)"></div>
               <template x-if="selectedFactRecord().metadata?.report_path">
                 <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
                   <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Report</div>
@@ -746,7 +765,7 @@
               </div>
             </div>
             <div class="p-4 space-y-4">
-              <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words" x-text="selectedIntentRecord().description"></p>
+              <div class="markdown-body text-sm text-slate-700 leading-relaxed break-words" x-html="renderMarkdown(selectedIntentRecord().description)"></div>
               <div class="pt-4 border-t border-slate-100 space-y-3 text-xs">
                 <div class="flex items-start justify-between gap-3"><span class="text-slate-400 shrink-0">From</span><span class="font-mono text-slate-600 text-right break-all" x-text="selectedIntentRecord().from.join(', ')"></span></div>
                 <div class="flex items-start justify-between gap-3"><span class="text-slate-400 shrink-0">To</span><span class="font-mono text-slate-600 text-right break-all" x-text="selectedIntentRecord().to || '—'"></span></div>
@@ -842,7 +861,7 @@
                         </div>
                         <span class="text-[10px] font-medium shrink-0" :class="conversationStatusClass(event)" x-show="event.status" x-text="event.status"></span>
                       </div>
-                      <div class="whitespace-pre-wrap break-words leading-relaxed" x-text="conversationEventText(event)"></div>
+                      <div class="markdown-body break-words leading-relaxed" x-html="renderMarkdown(conversationEventText(event))"></div>
                       <template x-if="event.tool_args_preview && conversation.view !== 'conversation'">
                         <div class="mt-2 rounded-lg bg-white/70 border border-slate-200 px-2 py-1.5 font-mono text-[11px] text-slate-500 whitespace-pre-wrap break-words" x-text="event.tool_args_preview"></div>
                       </template>
@@ -1013,7 +1032,7 @@
             </div>
             <button type="button" @click="openHintTimelineEntry(h.id)"
               class="w-full text-left p-4 transition hover:bg-amber-50/40">
-              <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words" x-text="h.content"></p>
+              <div class="markdown-body text-sm text-slate-700 leading-relaxed break-words" x-html="renderMarkdown(h.content)"></div>
             </button>
           </div>
         </template>
@@ -2516,6 +2535,44 @@ function cairnApp() {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    },
+
+    renderMarkdown(text) {
+      const source = String(text ?? '');
+      if (!source) return '';
+      marked.setOptions({
+        breaks: false,
+        gfm: true,
+        headerIds: false,
+        mangle: false,
+      });
+      const raw = marked.parse(source);
+      return DOMPurify.sanitize(raw, {
+        ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li',
+          'blockquote', 'pre', 'code', 'strong', 'em', 'a', 'br', 'hr',
+          'table', 'thead', 'tbody', 'tr', 'th', 'td', 'del', 'input',
+          'sup', 'sub', 'img'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'type', 'checked',
+          'disabled', 'src', 'alt', 'title'],
+        ADD_ATTR: ['target'],
+      });
+    },
+
+    renderMarkdownInline(text) {
+      const source = String(text ?? '');
+      if (!source) return '';
+      marked.setOptions({
+        breaks: false,
+        gfm: true,
+        headerIds: false,
+        mangle: false,
+      });
+      const raw = marked.parseInline(source);
+      return DOMPurify.sanitize(raw, {
+        ALLOWED_TAGS: ['code', 'strong', 'em', 'a', 'br', 'del', 'sup', 'sub'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'title'],
+        ADD_ATTR: ['target'],
+      });
     },
 
     highlightYamlScalar(value) {
